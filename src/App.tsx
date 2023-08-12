@@ -22,6 +22,7 @@ const OnRamp = lazy(() => import(`./features/on-ramp`));
 const Dashboard = lazy(() => import(`./features/dashboard`));
 const Treasury = lazy(() => import(`./features/treasury`));
 const PageNotFound = lazy(() => import(`./features/pagenotfound`));
+const DaoDashboard = lazy(() => import(`./features/daoDashboard`));
 
 export const App = () => {
   useEffect(() => {
@@ -60,6 +61,9 @@ export const App = () => {
                   </Route>
                   <Route exact path="/treasury">
                     <Treasury />
+                  </Route>
+                  <Route exact path="/dao-dashboard">
+                    <DaoDashboard />
                   </Route>
                   <Route>
                     <PageNotFound />
