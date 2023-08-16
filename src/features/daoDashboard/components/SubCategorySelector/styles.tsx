@@ -20,9 +20,6 @@ export const styles = (theme: Theme) => ({
     border: `solid 2px ${theme.palette.background.filters.outline}`,
     borderRadius: '6px',
     cursor: 'pointer',
-    '&:hover': {
-      background: '#252a43',
-    },
     '&:not($selected) $icon': {
       '& .bg': {
         fill: '#2E324C',
@@ -31,5 +28,8 @@ export const styles = (theme: Theme) => ({
         fill: '#1B1E31',
       },
     },
+  },
+  selected: {
+    backgroundColor: theme.palette.background.filters.active,
   },
 });

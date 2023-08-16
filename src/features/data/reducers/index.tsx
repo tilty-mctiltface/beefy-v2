@@ -39,6 +39,7 @@ import { resolverReducer } from './wallet/resolver';
 import { bridgesSlice } from './bridges';
 import { migrationSlice } from './wallet/migration';
 import { tooltipsSlice } from './tooltips';
+import { activeDataCategoryStateSlice } from './dao-dashboard';
 
 const entitiesReducer = combineReducers<BeefyState['entities']>({
   chains: chainsSlice.reducer,
@@ -92,6 +93,7 @@ const uiReducer = combineReducers<BeefyState['ui']>({
   stepperState: stepperSlice.reducer as Reducer<BeefyState['ui']['stepperState'], AnyAction>,
   treasury: treasurySlice.reducer,
   tooltips: tooltipsSlice.reducer,
+  daoDashboard: activeDataCategoryStateSlice.reducer,
 });
 
 export const rootReducer = combineReducers<BeefyState>({
