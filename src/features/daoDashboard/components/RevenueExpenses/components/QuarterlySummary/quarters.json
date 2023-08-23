@@ -1,0 +1,52 @@
+[
+  {
+    "year": "2022",
+    "quarter": 4,
+    "revenues": {
+      "vault": 215150,
+      "validator": 26317,
+      "marketMaking": 12914
+    },
+    "costs": {
+      "contributorFunding": 306800,
+      "operationalCosts": 30054,
+      "bribes": 53116,
+      "marketingAndEvents": 103000
+    }
+  },
+  {
+    "year": "2023",
+    "quarter": 1,
+    "revenues": {
+      "vault": 484343,
+      "validator": 40224,
+      "marketMaking": 8831,
+      "grantFunding": 120274,
+      "bribeIncoming": 3769,
+      "onRampIncome": 189
+    },
+    "costs": {
+      "contributorFunding": 306598,
+      "operationalCosts": 103398,
+      "bribes": 124399,
+      "marketingAndEvents": 54696
+    }
+  },
+  {
+    "year": "2023",
+    "quarter": 2,
+    "revenues": {
+      "vault": 539422,
+      "validator": 39746,
+      "grantFunding": 6842,
+      "bribeIncoming": 48721,
+      "onRampIncome": 96
+    },
+    "costs": {
+      "contributorFunding": 316741,
+      "operationalCosts": 171190,
+      "bribes": 111853,
+      "marketingAndEvents": 41824
+    }
+  }
+]

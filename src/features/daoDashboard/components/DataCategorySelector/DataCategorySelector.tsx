@@ -33,22 +33,24 @@ export const DataCategorySelector = memo(function DataCategorySelector() {
   ];
 
   return (
-    <Container maxWidth="lg">
-      <div className={classes.selector}>
-        {categories.map(category => {
-          return (
-            <button
-              key={category.id}
-              className={clsx(classes.button, {
-                [clsx(classes.selected)]: category.id === activeId,
-              })}
-              onClick={() => handleClick(category.id)}
-            >
-              {category.name}
-            </button>
-          );
-        })}
-      </div>
-    </Container>
+    <div className={classes.container}>
+      <Container maxWidth="lg">
+        <div className={classes.selector}>
+          {categories.map(category => {
+            return (
+              <button
+                key={category.id}
+                className={clsx(classes.button, {
+                  [clsx(classes.selected)]: category.id === activeId,
+                })}
+                onClick={() => handleClick(category.id)}
+              >
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+      </Container>
+    </div>
   );
 });

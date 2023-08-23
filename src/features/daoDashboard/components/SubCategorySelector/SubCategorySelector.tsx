@@ -21,11 +21,10 @@ const categories: DataSubCategory[] = [
   {
     categoryId: 0,
     categories: [
-      { id: 0, name: 'Revenue' },
+      { id: 0, name: 'Revenue & expenses' },
       { id: 1, name: 'Validator' },
       { id: 2, name: 'Contributor costs' },
       { id: 3, name: 'Bribes' },
-      { id: 4, name: 'Other' },
     ],
   },
   {
@@ -77,22 +76,24 @@ export const SubCategorySelector = memo(function SubCategorySelector() {
   );
 
   return (
-    <Container maxWidth="lg">
-      <div className={classes.selector}>
-        {currentCategory.map(category => {
-          return (
-            <button
-              key={category.id}
-              className={clsx(classes.button, {
-                [clsx(classes.selected)]: category.id === activeSubId,
-              })}
-              onClick={() => handleClick(category.id)}
-            >
-              {category.name}
-            </button>
-          );
-        })}
-      </div>
-    </Container>
+    <div className={classes.container}>
+      <Container maxWidth="lg">
+        <div className={classes.selector}>
+          {currentCategory.map(category => {
+            return (
+              <button
+                key={category.id}
+                className={clsx(classes.button, {
+                  [clsx(classes.selected)]: category.id === activeSubId,
+                })}
+                onClick={() => handleClick(category.id)}
+              >
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+      </Container>
+    </div>
   );
 });

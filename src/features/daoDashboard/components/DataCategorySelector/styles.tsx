@@ -1,6 +1,9 @@
 import type { Theme } from '@material-ui/core';
 
 export const styles = (theme: Theme) => ({
+  container: {
+    backgroundColor: '#020203',
+  },
   selector: {
     padding: `24px 0 12px 0`,
     display: 'flex',
