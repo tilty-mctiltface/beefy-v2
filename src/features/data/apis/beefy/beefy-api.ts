@@ -49,6 +49,16 @@ export interface ApyStandard {
 
 export type ApyData = ApyGovVault | ApyMaxiVault | ApyStandard;
 
+interface ValidatorPerformance {
+  performance: string;
+  lastUpdate: number;
+}
+export interface BeefyApiValidatorPerformancesResponse {
+  eth?: ValidatorPerformance;
+  ftm?: ValidatorPerformance;
+  fuse?: ValidatorPerformance;
+}
+
 export function isStandardVaultApy(apy: ApyData): apy is ApyStandard {
   return 'compoundingsPerYear' in apy;
 }
@@ -205,6 +215,13 @@ export class BeefyAPI {
       params: { _: this.getCacheBuster('short') },
     });
 
+    return res.data;
+  }
+
+  public async getValidatorPerformances(): Promise<BeefyApiValidatorPerformancesResponse> {
+    const res = await this.api.get('/validator-performance', {
+      params: { _: this.getCacheBuster('long') },
+    });
     return res.data;
   }
 
