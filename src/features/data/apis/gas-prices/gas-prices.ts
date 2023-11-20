@@ -34,7 +34,7 @@ function multiplyAndClamp(
   min: BigNumber,
   max: BigNumber
 ): BigNumber {
-  return clamp(value.multipliedBy(multiplier).decimalPlaces(0), min, max);
+  return clamp(value.multipliedBy(multiplier).decimalPlaces(0, BigNumber.ROUND_FLOOR), min, max);
 }
 
 function multiplyAndClampToString(
@@ -125,9 +125,13 @@ export class EIP1559GasPricer implements IGasPricer {
     const feeHistory = await web3.eth.getBeefyFeeHistory(this.blockCount, 'latest', [
       this.percentile,
     ]);
+    const nextBlock = await web3.eth.getBlock('latest');
 
     const sortedBaseFees = sortWith(feeHistory.baseFeePerGas, compareBigNumber);
-    const initialBaseFee = itemAtPercentile(sortedBaseFees, this.percentile);
+    const initialBaseFee = BigNumber.max(
+      itemAtPercentile(sortedBaseFees, this.percentile),
+      nextBlock.baseFeePerGas
+    );
     const sortedPriorityFees = sortWith(
       feeHistory.reward.map(reward => reward[0]),
       compareBigNumber

@@ -14,7 +14,7 @@ import { styles } from './styles';
 import { NavItem } from './components/NavItem';
 import { ReactComponent as VaultsIcon } from '../../images/icons/navigation/vault.svg';
 import { ReactComponent as DashboardIcon } from '../../images/icons/navigation/dashboard.svg';
-// import { ReactComponent as BridgeIcon } from '../../images/icons/navigation/bridge.svg';
+import { ReactComponent as BridgeIcon } from '../../images/icons/navigation/bridge.svg';
 import { ReactComponent as BuyCryptoIcon } from '../../images/icons/navigation/buy-crypto.svg';
 import { ReactComponent as DaoIcon } from '../../images/icons/navigation/dao.svg';
 import { ReactComponent as ResourcesIcon } from '../../images/icons/navigation/resources.svg';
@@ -22,7 +22,7 @@ import { DaoNavItems, ResourcesNavItems } from './list';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { DropNavItem } from './components/DropNavItem';
 import { MobileMenu } from './components/MobileMenu';
-import { BifiPrice } from './components/BifiPrice';
+import { Prices } from './components/Prices';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { selectShouldInitProposals } from '../../features/data/selectors/data-loader';
 import { fetchActiveProposals } from '../../features/data/actions/proposal';
@@ -62,7 +62,12 @@ export const Header = memo(function Header() {
               </Link>
               <Hidden mdDown>
                 <NavItem title={'Header-Vaults'} url="/" Icon={VaultsIcon} />
-                <NavItem title={'Header-Dashboard'} url="/dashboard" Icon={DashboardIcon} />
+                <NavItem
+                  exact={false}
+                  title={'Header-Dashboard'}
+                  url="/dashboard"
+                  Icon={DashboardIcon}
+                />
                 <NavItem title={'Header-DaoDashboard'} url="/dao-dashboard" Icon={DashboardIcon} />
                 <DropNavItem
                   title={'Header-Dao'}
@@ -80,8 +85,8 @@ export const Header = memo(function Header() {
             <div className={classes.flex}>
               <Hidden mdDown>
                 <NavItem title={'Header-BuyCrypto'} url="/onramp" Icon={BuyCryptoIcon} />
-                {/* <NavItem title={'Header-BridgeBifi'} url="/bridge" Icon={BridgeIcon} /> */}
-                <BifiPrice />
+                <NavItem title={'Header-BridgeBifi'} url="/bridge" Icon={BridgeIcon} />
+                <Prices />
               </Hidden>
               <ConnectionStatus />
               <Hidden lgUp>

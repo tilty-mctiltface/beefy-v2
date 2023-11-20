@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
-import BigNumber from 'bignumber.js';
+import type BigNumber from 'bignumber.js';
 import type { Draft } from 'immer';
-import { uniq } from 'lodash-es';
 import type { BeefyState } from '../../../../redux-types';
 import type { FetchAllBalanceFulfilledPayload } from '../../actions/balance';
 import { fetchAllBalanceAction, fetchBalanceAction } from '../../actions/balance';
@@ -16,17 +15,17 @@ import type { BoostEntity } from '../../entities/boost';
 import type { ChainEntity } from '../../entities/chain';
 import type { TokenEntity } from '../../entities/token';
 import type { VaultEntity } from '../../entities/vault';
+import { isGovVault, isStandardVault } from '../../entities/vault';
 import { selectAllVaultBoostIds, selectBoostById } from '../../selectors/boosts';
-import {
-  selectIsStandardVaultEarnTokenAddress,
-  selectStandardVaultByEarnTokenAddress,
-  selectVaultById,
-} from '../../selectors/vaults';
+import { selectAllVaultIds, selectVaultById } from '../../selectors/vaults';
 import { initiateMinterForm } from '../../actions/minters';
-import { initiateBridgeForm } from '../../actions/bridge';
 import { selectMinterById } from '../../selectors/minters';
 import { BIG_ZERO } from '../../../../helpers/big-number';
-import { fetchUserSnapshotBalance } from '../../actions/snapshot-balance';
+import {
+  selectBoostUserBalanceInToken,
+  selectGovVaultUserStakedBalanceInDepositToken,
+  selectUserBalanceOfToken,
+} from '../../selectors/balance';
 
 /**
  * State containing user balances state
@@ -36,12 +35,6 @@ export interface BalanceState {
   // data even when the user quickly changes account
   byAddress: {
     [address: string]: {
-      //temporal : snap balance
-      snapshotBalance: {
-        lp: BigNumber;
-        excluded?: BigNumber;
-      };
-
       // quick access to all deposited vaults for this address
       // this can include gov, standard, or a boost's target vault
       depositedVaultIds: VaultEntity['id'][];
@@ -119,9 +112,11 @@ export const balanceSlice = createSlice({
 
       const walletState = getWalletState(sliceState, walletAddress);
       const balance = action.payload.balance;
-      addTokenBalanceToState(state, walletState, vault.chainId, balance.tokens);
+
+      addTokenBalanceToState(walletState, vault.chainId, balance.tokens);
       addGovVaultBalanceToState(walletState, balance.govVaults);
       addBoostBalanceToState(state, walletState, balance.boosts);
+      updateDepositedVaults(state, walletState, action.payload.walletAddress);
     });
 
     builder.addCase(initiateMinterForm.fulfilled, (sliceState, action) => {
@@ -134,21 +129,9 @@ export const balanceSlice = createSlice({
 
       const walletState = getWalletState(sliceState, walletAddress);
       const balance = action.payload.balance;
-      addTokenBalanceToState(state, walletState, minter.chainId, balance.tokens);
-    });
 
-    builder.addCase(initiateBridgeForm.fulfilled, (sliceState, action) => {
-      const state = action.payload.state;
-      if (!action.payload.walletAddress) {
-        return;
-      }
-
-      const walletAddress = action.payload.walletAddress.toLocaleLowerCase();
-
-      const walletState = getWalletState(sliceState, walletAddress);
-      const balance = action.payload.balance;
-
-      addTokenBalanceToState(state, walletState, action.payload.chainId, balance.tokens);
+      addTokenBalanceToState(walletState, minter.chainId, balance.tokens);
+      updateDepositedVaults(state, walletState, action.payload.walletAddress);
     });
 
     builder.addCase(
@@ -160,45 +143,19 @@ export const balanceSlice = createSlice({
 
         const walletState = getWalletState(sliceState, walletAddress);
         const balance = action.payload.balance;
-        addTokenBalanceToState(state, walletState, chainId, balance.tokens);
+
+        addTokenBalanceToState(walletState, chainId, balance.tokens);
         addGovVaultBalanceToState(walletState, balance.govVaults);
         addBoostBalanceToState(state, walletState, balance.boosts);
+        updateDepositedVaults(state, walletState, action.payload.walletAddress);
       }
     );
-    builder.addCase(fetchUserSnapshotBalance.fulfilled, (sliceState, action) => {
-      const { balance, address } = action.payload;
-      const { lp, excluded } = Object.values(balance).reduce(
-        (total, balancePerChain) => {
-          total['lp'] = total['lp'].plus(new BigNumber(balancePerChain.lp));
-          // total['excluded'] = total['excluded'].plus(new BigNumber(chain[1].excluded));
-
-          return total;
-        },
-        {
-          lp: BIG_ZERO,
-          excluded: BIG_ZERO,
-        }
-      );
-
-      if (sliceState.byAddress[address.toLocaleLowerCase()] === undefined) {
-        sliceState.byAddress[address.toLocaleLowerCase()].snapshotBalance = {
-          lp: BIG_ZERO,
-          excluded: BIG_ZERO,
-        };
-      }
-
-      sliceState.byAddress[address.toLocaleLowerCase()].snapshotBalance = { lp, excluded };
-    });
   },
 });
 
 function getWalletState(sliceState: Draft<BalanceState>, walletAddress: string) {
   if (sliceState.byAddress[walletAddress] === undefined) {
     sliceState.byAddress[walletAddress] = {
-      snapshotBalance: {
-        lp: BIG_ZERO,
-        excluded: BIG_ZERO,
-      },
       depositedVaultIds: [],
       tokenAmount: {
         byChainId: {},
@@ -211,6 +168,74 @@ function getWalletState(sliceState: Draft<BalanceState>, walletAddress: string) 
   return sliceState.byAddress[walletAddress];
 }
 
+function updateDepositedVaults(
+  state: BeefyState,
+  walletState: Draft<BalanceState['byAddress']['0xABC']>,
+  walletAddress: string
+) {
+  walletState.depositedVaultIds = calculateDepositedVaultsForAddress(state, walletAddress);
+}
+
+/**
+ * Calculate all vaults that are deposited for a given address
+ * For standard vaults, this means the user has a balance in the receipt token, or in the bridged receipt token, or in a boost
+ * For gov vaults, this means the user has a gov vault balance
+ */
+function calculateDepositedVaultsForAddress(state: BeefyState, walletAddress: string) {
+  const vaultIds = selectAllVaultIds(state);
+  const depositedIds: VaultEntity['id'][] = [];
+
+  for (const vaultId of vaultIds) {
+    const vault = selectVaultById(state, vaultId);
+
+    if (isStandardVault(vault)) {
+      // standard vaults via receipt tokens
+      let deposited = false;
+      const balance = selectUserBalanceOfToken(
+        state,
+        vault.chainId,
+        vault.earnContractAddress,
+        walletAddress
+      );
+      if (balance.gt(BIG_ZERO)) {
+        deposited = true;
+      }
+      // + boosts
+      if (!deposited) {
+        const boostIds = selectAllVaultBoostIds(state, vault.id);
+        for (const boostId of boostIds) {
+          const balance = selectBoostUserBalanceInToken(state, boostId, walletAddress);
+          if (balance.gt(BIG_ZERO)) {
+            deposited = true;
+            break;
+          }
+        }
+      }
+      // + bridged
+      if (!deposited && vault.bridged) {
+        for (const [chainId, bridgedAddress] of Object.entries(vault.bridged)) {
+          const balance = selectUserBalanceOfToken(state, chainId, bridgedAddress, walletAddress);
+          if (balance.gt(BIG_ZERO)) {
+            deposited = true;
+            break;
+          }
+        }
+      }
+      // add?
+      if (deposited) {
+        depositedIds.push(vault.id);
+      }
+    } else if (isGovVault(vault)) {
+      const balance = selectGovVaultUserStakedBalanceInDepositToken(state, vault.id, walletAddress);
+      if (balance.gt(BIG_ZERO)) {
+        depositedIds.push(vault.id);
+      }
+    }
+  }
+
+  return depositedIds;
+}
+
 function addBalancesToState(
   sliceState: Draft<BalanceState>,
   payload: FetchAllBalanceFulfilledPayload
@@ -221,13 +246,13 @@ function addBalancesToState(
   const walletState = getWalletState(sliceState, walletAddress);
   const balance = payload.data;
 
-  addTokenBalanceToState(state, walletState, chainId, balance.tokens);
+  addTokenBalanceToState(walletState, chainId, balance.tokens);
   addBoostBalanceToState(state, walletState, balance.boosts);
   addGovVaultBalanceToState(walletState, balance.govVaults);
+  updateDepositedVaults(state, walletState, payload.walletAddress);
 }
 
 function addTokenBalanceToState(
-  state: BeefyState,
   walletState: Draft<BalanceState['byAddress']['0xABC']>,
   chainId: ChainEntity['id'],
   balances: TokenBalance[]
@@ -255,26 +280,6 @@ function addTokenBalanceToState(
       ] = {
         balance: tokenBalance.amount,
       };
-
-      // if the token is the earnedToken of a vault
-      // this means the user deposited in this vault
-      if (selectIsStandardVaultEarnTokenAddress(state, chainId, tokenBalance.tokenAddress)) {
-        const vaultId = selectStandardVaultByEarnTokenAddress(
-          state,
-          chainId,
-          tokenBalance.tokenAddress
-        );
-
-        // to decide if we want to add or remove the vault we consider both the boost and vault deposit
-        // I know we are adding carrots and oignons here but it's just to check if > 0
-        let totalDepositOrRewards = tokenBalance.amount;
-        for (const boostId of selectAllVaultBoostIds(state, vaultId)) {
-          const boostDeposit = walletState.tokenAmount.byBoostId[boostId]?.balance || BIG_ZERO;
-          const boostRewards = walletState.tokenAmount.byBoostId[boostId]?.rewards || BIG_ZERO;
-          totalDepositOrRewards = totalDepositOrRewards.plus(boostDeposit).plus(boostRewards);
-        }
-        addOrRemoveFromDepositedList(walletState, totalDepositOrRewards, vaultId);
-      }
     }
   }
 }
@@ -298,13 +303,10 @@ function addGovVaultBalanceToState(
       stateForVault === undefined ||
       !stateForVault.rewards.isEqualTo(vaultBalance.rewards)
     ) {
-      const vaultState = {
+      walletState.tokenAmount.byGovVaultId[vaultId] = {
         rewards: vaultBalance.rewards,
         balance: vaultBalance.balance,
       };
-      walletState.tokenAmount.byGovVaultId[vaultId] = vaultState;
-
-      addOrRemoveFromDepositedList(walletState, vaultBalance.balance, vaultBalance.vaultId);
     }
   }
 }
@@ -326,44 +328,6 @@ function addBoostBalanceToState(
         balance: boostBalance.balance,
         rewards: boostBalance.rewards,
       };
-    }
-  }
-
-  // once we added all boosts, find out if we have staked something in each vault
-  const allVaultIds = uniq(
-    boostBalances.map(boostBalance => {
-      const boost = selectBoostById(state, boostBalance.boostId);
-      return boost.vaultId;
-    })
-  );
-  for (const vaultId of allVaultIds) {
-    const vault = selectVaultById(state, vaultId);
-    const vaultBalance =
-      walletState.tokenAmount.byChainId[vault.chainId]?.byTokenAddress[
-        vault.earnedTokenAddress.toLowerCase()
-      ]?.balance || BIG_ZERO;
-    let totalDepositOrRewards = new BigNumber(vaultBalance);
-    for (const boostId of selectAllVaultBoostIds(state, vaultId)) {
-      const boostDeposit = walletState.tokenAmount.byBoostId[boostId]?.balance || BIG_ZERO;
-      const boostRewards = walletState.tokenAmount.byBoostId[boostId]?.rewards || BIG_ZERO;
-      totalDepositOrRewards = totalDepositOrRewards.plus(boostDeposit).plus(boostRewards);
-      addOrRemoveFromDepositedList(walletState, totalDepositOrRewards, vaultId);
-    }
-  }
-}
-
-function addOrRemoveFromDepositedList(
-  walletState: Draft<BalanceState['byAddress']['0xABC']>,
-  amount: BigNumber,
-  vaultId: VaultEntity['id']
-) {
-  if (amount.isGreaterThan(0)) {
-    if (!walletState.depositedVaultIds.includes(vaultId)) {
-      walletState.depositedVaultIds.push(vaultId);
-    }
-  } else {
-    if (walletState.depositedVaultIds.includes(vaultId)) {
-      walletState.depositedVaultIds = walletState.depositedVaultIds.filter(vid => vid !== vaultId);
     }
   }
 }

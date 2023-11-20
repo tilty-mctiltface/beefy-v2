@@ -2,7 +2,7 @@ import React, { Fragment, memo, useState } from 'react';
 import { Divider, Drawer, makeStyles } from '@material-ui/core';
 import { Close, Menu } from '@material-ui/icons';
 import { styles } from './styles';
-import { BifiPrice } from '../BifiPrice';
+// import { BifiPrice } from '../BifiPrice';
 import { NavItemMobile } from '../NavItem';
 import { useTranslation } from 'react-i18next';
 import { MobileList } from '../../list';
@@ -10,6 +10,7 @@ import type { NavConfig, NavDropdownConfig } from '../DropNavItem/types';
 import { isNavDropdownConfig } from '../DropNavItem/types';
 import clsx from 'clsx';
 import { UnreadProposalsDot } from '../Badges/UnreadProposalsDot';
+import { Prices } from '../Prices';
 
 const useStyles = makeStyles(styles);
 
@@ -29,7 +30,7 @@ export const MobileMenu = memo(function MobileMenu() {
         <div className={classes.menuContainer}>
           <div className={classes.head}>
             <div className={classes.flex}>
-              <BifiPrice />
+              <Prices />
             </div>
             <Close className={classes.cross} onClick={handleDrawerToggle} />
           </div>
@@ -48,7 +49,10 @@ export const MobileMenu = memo(function MobileMenu() {
   );
 });
 
-type MobileItemProps = { item: NavConfig; onClick: () => void };
+type MobileItemProps = {
+  item: NavConfig;
+  onClick: () => void;
+};
 const MobileItem = memo<MobileItemProps>(function MobileItem({ item, onClick }) {
   if (isNavDropdownConfig(item)) {
     const NavComponent = item.MobileComponent ?? DropMobile;
@@ -71,6 +75,7 @@ const MobileItem = memo<MobileItemProps>(function MobileItem({ item, onClick }) 
       url={item.url}
       Badge={item.Badge}
       Icon={item.Icon}
+      exact={item.exact}
     />
   );
 });

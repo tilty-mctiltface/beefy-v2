@@ -4,6 +4,7 @@ import type { ChainEntity } from '../entities/chain';
 import { infoCards } from '../../../config/info-cards';
 import type {
   AmmConfig,
+  BeefyBridgeConfig,
   BeefyZapConfig,
   BoostConfig,
   BridgeConfig,
@@ -14,7 +15,6 @@ import type {
   OneInchZapConfig,
   PartnersConfig,
   PlatformConfig,
-  StrategyTypeConfig,
   VaultConfig,
 } from './config-types';
 import { mapValues } from 'lodash-es';
@@ -46,6 +46,10 @@ export class ConfigAPI {
         ])
       )
     );
+  }
+
+  public async fetchBeefyBridgeConfig(): Promise<BeefyBridgeConfig> {
+    return (await import('../../../config/beefy-bridge')).beefyBridgeConfig;
   }
 
   public async fetchBeefyZapsConfig(): Promise<BeefyZapConfig[]> {
@@ -112,10 +116,6 @@ export class ConfigAPI {
 
   public async fetchAllInfoCards(): Promise<InfoCardsConfig> {
     return infoCards;
-  }
-
-  public async fetchStrategyTypes(): Promise<StrategyTypeConfig[]> {
-    return (await import('../../../config/strategy-types.json')).default;
   }
 
   public async fetchPlatforms(): Promise<PlatformConfig[]> {

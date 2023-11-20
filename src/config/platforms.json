@@ -893,5 +893,20 @@
     "id": "kinetix",
     "name": "Kinetix",
     "filter": true
+  },
+  {
+    "id": "compound",
+    "name": "Compound",
+    "filter": true
+  },
+  {
+    "id": "ichi",
+    "name": "Ichi",
+    "filter": true
+  },
+  {
+    "id": "bril",
+    "name": "Bril",
+    "filter": true
   }
 ]

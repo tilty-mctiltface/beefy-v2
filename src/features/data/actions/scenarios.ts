@@ -6,7 +6,7 @@ import { createFulfilledActionCapturer, poll } from '../utils/async-utils';
 import { fetchApyAction } from './apy';
 import { fetchAllBoosts, initiateBoostForm } from './boosts';
 import { fetchChainConfigs } from './chains';
-import { fetchAllPricesAction, fetchBeefyBuybackAction } from './prices';
+import { fetchAllPricesAction } from './prices';
 import {
   fetchAllVaults,
   fetchFeaturedVaults,
@@ -28,11 +28,10 @@ import { selectShouldInitAddressBook } from '../selectors/data-loader';
 import { initiateMinterForm } from './minters';
 import type { MinterEntity } from '../entities/minter';
 import { selectMinterById } from '../selectors/minters';
-import { initiateBridgeForm } from './bridge';
 import { fetchPlatforms } from './platforms';
 import { selectAllChainIds } from '../selectors/chains';
 import { fetchBridges } from './bridges';
-import { fetchValidatorPerformance } from './validators';
+import { fetchWalletTimeline } from './analytics';
 
 type CapturedFulfilledActionGetter = Promise<() => Action>;
 
@@ -69,9 +68,6 @@ export async function initHomeDataV4(store: BeefyStore) {
     // we can start fetching apy, it will arrive when it wants, nothing depends on it
     store.dispatch(fetchApyAction());
 
-    // we start fetching buyback
-    store.dispatch(fetchBeefyBuybackAction());
-
     store.dispatch(fetchFeaturedVaults());
 
     store.dispatch(fetchVaultsZapSupport());
@@ -83,8 +79,6 @@ export async function initHomeDataV4(store: BeefyStore) {
     store.dispatch(fetchBridges());
 
     store.dispatch(fetchVaultsLastHarvests());
-
-    store.dispatch(fetchValidatorPerformance());
   });
 
   // create the wallet instance as soon as we get the chain list
@@ -122,13 +116,19 @@ export async function initHomeDataV4(store: BeefyStore) {
   // before doing anything else, we need our prices
   await pricesPromise;
 
+  // pnl timeline
+  if (selectIsWalletKnown(store.getState())) {
+    const walletAddress = selectWalletAddress(store.getState());
+    await store.dispatch(fetchWalletTimeline({ address: walletAddress }));
+  }
+
   for (const chain of chains) {
     // run in an async block se we don't wait for a slow chain
     (async () => {
       const chainFfs = fulfillsByNet[chain.id];
       await store.dispatch((await chainFfs.contractData)());
       if (chainFfs.user !== null) {
-        dispatchUserFfs(store, chainFfs.user);
+        return dispatchUserFfs(store, chainFfs.user);
       }
     })().catch(err => {
       // as we still dispatch network errors, for reducers to handle
@@ -294,8 +294,4 @@ export async function initMinterForm(
 
   // then we can init the form
   store.dispatch(initiateMinterForm({ minterId, walletAddress }));
-}
-
-export async function initBridgeForm(store: BeefyStore, walletAddress: string | null) {
-  store.dispatch(initiateBridgeForm({ walletAddress }));
 }

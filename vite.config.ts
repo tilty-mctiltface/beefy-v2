@@ -51,6 +51,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    assetsInlineLimit: 0,
     commonjsOptions: {
       transformMixedEsModules: true,
     },
@@ -59,6 +60,7 @@ export default defineConfig({
     },
   },
   resolve: {
+    preserveSymlinks: true,
     alias: [
       {
         find: /crypto-addr-codec/,

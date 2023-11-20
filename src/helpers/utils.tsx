@@ -44,4 +44,15 @@ export const bluechipTokens = [
   'sethETH', //Stargate Ethereum ETH
   'multiBTC',
   'sBTC',
+  'BTCB',
+  'AVAX',
+  'BTCb',
+  'tBTC', // trehshodl BTC
+  'axlWBTC', //axelar WBTC
+  'axlETH', // axelar eth
+  'wstETH', // lido staked eth
+  'stETH', // lido eth
+  'rETH', // rocketpool eth
+  'WETHwh', // wormhole ETH
+  'WBTCwh', // wormhole WBTC
 ];

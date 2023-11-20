@@ -10,39 +10,20 @@ import {
   getBoostsForChain,
   getVaultsForChain,
 } from './common/config';
+import { getStrategyIds } from './common/strategies';
 import strategyABI from '../src/config/abi/strategy.json';
 import vaultABI from '../src/config/abi/vault.json';
 import platforms from '../src/config/platforms.json';
-import strategyTypes from '../src/config/strategy-types.json';
 import type { VaultConfig } from '../src/features/data/apis/config-types';
+import partition from 'lodash/partition';
 
 const overrides = {
   'bunny-bunny-eol': { keeper: undefined, stratOwner: undefined },
-  'blizzard-xblzd-bnb-old-eol': { keeper: undefined },
-  'blizzard-xblzd-busd-old-eol': { keeper: undefined },
-  'heco-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'polygon-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'avax-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
   'bifi-maxi': { stratOwner: undefined }, // harvester 0xDe30
   'beltv2-4belt': { vaultOwner: undefined }, // moonpot deployer
-  'cronos-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'metis-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'aurora-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'fuse-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'moonbeam-bifi-maxi': { beefyFeeRecipient: undefined }, // 0x0
-  'scream-frax': { vaultOwner: undefined }, // Rescue
-  'baby-sol-bnb': { beefyFeeRecipient: undefined }, // 0x0
-  'sicle-grape-mim': { beefyFeeRecipient: undefined },
-  'geist-crv': { harvestOnDeposit: undefined },
-  'geist-ftm': { harvestOnDeposit: undefined },
-  'geist-wbtc': { harvestOnDeposit: undefined },
-  'geist-eth': { harvestOnDeposit: undefined },
-  'geist-usdc': { harvestOnDeposit: undefined },
-  'geist-mim': { harvestOnDeposit: undefined },
-  'pearl-wbtc-usdrv3': { harvestOnDeposit: undefined },
   'baseswap-axlwbtc-usdbc': { harvestOnDeposit: undefined },
-  'venus-bnb': { harvestOnDeposit: undefined },
   'kinetix-klp': { harvestOnDeposit: undefined },
+  'bifi-vault': { beefyFeeRecipient: undefined }, // TODO: remove
 };
 
 const oldValidOwners = [
@@ -54,6 +35,8 @@ const oldValidOwners = [
 const oldValidFeeRecipients = {
   canto: '0xF09d213EE8a8B159C884b276b86E08E26B3bfF75',
   kava: '0x07F29FE11FbC17876D9376E3CD6F2112e81feA6F',
+  moonriver: '0x617f12E04097F16e73934e84f35175a1B8196551',
+  moonbeam: '0x3E7F60B442CEAE0FE5e48e07EB85Cfb1Ed60e81A',
 };
 
 const nonHarvestOnDepositChains = ['ethereum', 'avax'];
@@ -62,7 +45,7 @@ const nonHarvestOnDepositPools = ['venus-bnb'];
 const addressFields = ['tokenAddress', 'earnedTokenAddress', 'earnContractAddress'];
 
 const validPlatformIds = platforms.map(platform => platform.id);
-const validstrategyTypeIds = strategyTypes.map(strategyType => strategyType.id);
+const { gov: validGovStrategyIds, vault: validVaultStrategyIds } = getStrategyIds();
 
 const oldFields = [
   'tokenDescription',
@@ -135,7 +118,8 @@ const validateSingleChain = async (chainId, uniquePoolId) => {
   let updates: Record<string, Record<string, any>> = {};
   let exitCode = 0;
   //Governance pools should be separately verified
-  pools = pools.filter(pool => !pool.isGovVault);
+  const [govPools, vaultPools] = partition(pools, pool => pool.isGovVault);
+  pools = vaultPools;
 
   const poolIds = new Set(pools.map(pool => pool.id));
   const uniqueEarnedToken = new Set();
@@ -177,13 +161,11 @@ const validateSingleChain = async (chainId, uniquePoolId) => {
     }
 
     if (!pool.strategyTypeId) {
-      console.error(
-        `Error: ${pool.id} : strategyTypeId missing vault strategy type; see strategy-types.json`
-      );
+      console.error(`Error: ${pool.id} : strategyTypeId missing vault strategy type`);
       exitCode = 1;
-    } else if (!validstrategyTypeIds.includes(pool.strategyTypeId)) {
+    } else if (!validVaultStrategyIds.includes(pool.strategyTypeId)) {
       console.error(
-        `Error: ${pool.id} : strategyTypeId ${pool.strategyTypeId} not present in strategy-types.json`
+        `Error: ${pool.id} : strategyTypeId invalid, "StrategyDescription-${pool.strategyTypeId}" not present in locales/en/risks.json`
       );
       exitCode = 1;
     }
@@ -286,6 +268,19 @@ const validateSingleChain = async (chainId, uniquePoolId) => {
   boosts.forEach(boost => {
     if (!poolIds.has(boost.poolId)) {
       console.error(`Error: Boost ${boost.id}: Boost has non-existent pool id ${boost.poolId}.`);
+      exitCode = 1;
+    }
+  });
+
+  // Gov Pools
+  govPools.forEach(pool => {
+    if (!pool.strategyTypeId) {
+      console.error(`Error: ${pool.id} : strategyTypeId missing gov strategy type`);
+      exitCode = 1;
+    } else if (!validGovStrategyIds.includes(pool.strategyTypeId)) {
+      console.error(
+        `Error: ${pool.id} : strategyTypeId invalid, "StrategyDescription-Gov-${pool.strategyTypeId}" not present in locales/en/risks.json`
+      );
       exitCode = 1;
     }
   });

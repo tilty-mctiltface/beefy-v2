@@ -14,11 +14,12 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Redirects } from './components/Redirects';
 import { Stepper } from './components/Stepper';
 import { Layout } from './components/Layout';
+import { AddTokenToWallet } from './components/AddTokenToWallet';
 
 const Home = lazy(() => import(`./features/home`));
 const Vault = lazy(() => import(`./features/vault`));
 const OnRamp = lazy(() => import(`./features/on-ramp`));
-// const Bridge = lazy(() => import(`./features/bridge`));
+const Bridge = lazy(() => import(`./features/bridge`));
 const Dashboard = lazy(() => import(`./features/dashboard`));
 const Treasury = lazy(() => import(`./features/treasury`));
 const PageNotFound = lazy(() => import(`./features/pagenotfound`));
@@ -50,9 +51,9 @@ export const App = () => {
                   <Route exact path="/onramp">
                     <OnRamp />
                   </Route>
-                  {/* <Route exact path="/bridge">
+                  <Route exact path="/bridge">
                     <Bridge />
-                  </Route> */}
+                  </Route>
                   <Route strict exact path="/dashboard/:address">
                     <Dashboard mode={'url'} />
                   </Route>
@@ -71,6 +72,7 @@ export const App = () => {
                 </Switch>
               </Suspense>
               <Stepper />
+              <AddTokenToWallet />
             </Layout>
           </Router>
         </HelmetProvider>

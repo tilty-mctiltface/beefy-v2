@@ -1,7 +1,6 @@
 import type { ChainEntity } from './chain';
 import type { PlatformEntity } from './platform';
 import type { TokenEntity } from './token';
-import type { StrategyTypeEntity } from './strategy-type';
 
 // maybe a RiskAnalysis type would be better
 
@@ -43,7 +42,7 @@ export interface VaultStandard {
    */
   earnContractAddress: string;
 
-  strategyTypeId: StrategyTypeEntity['id'];
+  strategyTypeId: string;
 
   isGovVault: false;
 
@@ -71,6 +70,8 @@ export interface VaultStandard {
   retireReason?: string;
   pauseReason?: string;
   migrationIds?: string[];
+  /** Map of chain->address of bridged receipt tokens */
+  bridged?: Record<ChainEntity['id'], string>;
 }
 
 export interface VaultGov {
@@ -105,6 +106,8 @@ export interface VaultGov {
    * we must exclude/substract the tvl from the maxi vault
    */
   excludedId: null | VaultEntity['id'];
+
+  strategyTypeId: string;
 
   isGovVault: true;
 

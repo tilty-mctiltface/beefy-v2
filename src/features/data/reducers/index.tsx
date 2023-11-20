@@ -12,7 +12,6 @@ import { boostsSlice } from './boosts';
 import { dataLoaderSlice } from './data-loader';
 import { walletSlice } from './wallet/wallet';
 import type { BeefyState } from '../../../redux-types';
-import { buybackSlice } from './buyback';
 import { chanIdsTransform, filteredVaultsSlice, userCategoryTransform } from './filtered-vaults';
 import { platformsSlice } from './platforms';
 import { uiThemeSlice } from './ui-theme';
@@ -39,6 +38,7 @@ import { resolverReducer } from './wallet/resolver';
 import { bridgesSlice } from './bridges';
 import { migrationSlice } from './wallet/migration';
 import { tooltipsSlice } from './tooltips';
+import { addToWalletSlice } from './add-to-wallet';
 import { activeDataCategoryStateSlice } from './dao-dashboard';
 
 const entitiesReducer = combineReducers<BeefyState['entities']>({
@@ -58,7 +58,6 @@ const entitiesReducer = combineReducers<BeefyState['entities']>({
 const bizReducer = combineReducers<BeefyState['biz']>({
   tvl: tvlSlice.reducer,
   apy: apySlice.reducer,
-  buyback: buybackSlice.reducer,
   partners: partnersSlice.reducer,
   historical: historicalSlice.reducer,
 });
@@ -93,6 +92,7 @@ const uiReducer = combineReducers<BeefyState['ui']>({
   stepperState: stepperSlice.reducer as Reducer<BeefyState['ui']['stepperState'], AnyAction>,
   treasury: treasurySlice.reducer,
   tooltips: tooltipsSlice.reducer,
+  addToWallet: addToWalletSlice.reducer,
   daoDashboard: activeDataCategoryStateSlice.reducer,
 });
 
